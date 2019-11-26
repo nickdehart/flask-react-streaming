@@ -1,18 +1,12 @@
-from flask import Flask, Response, request, redirect, url_for
+from flask import Flask, Response
 import cv2
 import threading
 app = Flask(__name__)
 
-# initialize the output frame and a lock used to ensure thread-safe
-# exchanges of the output frames (useful for multiple browsers/tabs
+# initialize a lock used to ensure thread-safe
+# exchanges of the frames (useful for multiple browsers/tabs
 # are viewing tthe stream)
-outputFrame = None
 lock = threading.Lock()
-
-# initialize the video stream and allow the camera sensor to
-# warmup
-#vs = VideoStream(usePiCamera=1).start()
-vc = cv2.VideoCapture(0)
 
 @app.route('/stream',methods = ['POST', 'GET'])
 def stream():
@@ -21,20 +15,23 @@ def stream():
 
 def generate():
    # grab global references to the output frame and lock variables
-   global lock, vc
+   global lock
+   # initialize the video stream
+   vc = cv2.VideoCapture(0)
+   
+   # check camera is open
    if vc.isOpened():
       rval, frame = vc.read()
    else:
       rval = False
 
-   # loop over frames from the output stream
+   # while streaming
    while rval:
       # wait until the lock is acquired
       with lock:
-         # check if the output frame is available, otherwise skip
-         # the iteration of the loop
+         # read next frame
          rval, frame = vc.read()
-
+         # if blank frame
          if frame is None:
             continue
 
@@ -47,6 +44,7 @@ def generate():
 
       # yield the output frame in the byte format
       yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(encodedImage) + b'\r\n')
+   # release the camera
    vc.release()
 
 if __name__ == '__main__':
