@@ -8,13 +8,12 @@ app = Flask(__name__)
 # are viewing tthe stream)
 lock = threading.Lock()
 
-@app.route('/stream',methods = ['POST', 'GET'])
+@app.route('/stream',methods = ['GET'])
 def stream():
-   return Response(generate(),
-		mimetype = "multipart/x-mixed-replace; boundary=frame")
+   return Response(generate(), mimetype = "multipart/x-mixed-replace; boundary=frame")
 
 def generate():
-   # grab global references to the output frame and lock variables
+   # grab global references to the lock variable
    global lock
    # initialize the video stream
    vc = cv2.VideoCapture(0)
